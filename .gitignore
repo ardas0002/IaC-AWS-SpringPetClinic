@@ -17,3 +17,4 @@ _site/
 !petclinic.css
 iac/.terraform/*
 iac/.terraform.lock.hcl
+iac/terraform.tfstate
