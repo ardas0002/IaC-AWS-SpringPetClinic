@@ -15,42 +15,42 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
 # Define VPC
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr
 }
 
 # Define Public Subnet in Availability Zone 1
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = var.public_subnet_a_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
+  availability_zone       = var.availability_zone_a
 }
 
 # Define Private Subnet in Availability Zone 1
 resource "aws_subnet" "private_a" {
   vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block = var.private_subnet_a_cidr
+  availability_zone = var.availability_zone_a
 }
 
 # Define Public Subnet in Availability Zone 2
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.3.0/24"
+  cidr_block              = var.public_subnet_b_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1b"
+  availability_zone       = var.availability_zone_b
 }
 
 # Define Private Subnet in Availability Zone 2
 resource "aws_subnet" "private_b" {
   vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.4.0/24"
-  availability_zone = "us-east-1b"
+  cidr_block = var.private_subnet_b_cidr
+  availability_zone = var.availability_zone_b
 }
 
 # Define Internet Gateway
@@ -103,8 +103,8 @@ resource "aws_security_group" "instance_sg" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = var.instance_inbound_port
+    to_port     = var.instance_inbound_port
     protocol    = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
@@ -132,7 +132,7 @@ resource "aws_lb" "app_lb" {
 # Define Target Group for ALB
 resource "aws_lb_target_group" "app_tg" {
   name     = "app-tg"
-  port     = 8080
+  port     = var.instance_inbound_port
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
 }
@@ -151,9 +151,9 @@ resource "aws_lb_listener" "app_listener" {
 
 # Define Launch Template for ASG
 resource "aws_launch_template" "app_lt" {
-  name_prefix   = "app-petclinic"
-  image_id      = "ami-03b1721d5d0ea0803" # replace with an Ubuntu AMI ID
-  instance_type = "t2.micro"
+  name_prefix   = "app-petclinic-lt"
+  image_id      = var.instance_ami # replace with an Ubuntu AMI ID
+  instance_type = var.instance_type
 
   network_interfaces {
     associate_public_ip_address = false
@@ -164,9 +164,9 @@ resource "aws_launch_template" "app_lt" {
 
 # Define Auto Scaling Group
 resource "aws_autoscaling_group" "app_asg" {
-  desired_capacity     = 2
-  max_size             = 4
-  min_size             = 2
+  desired_capacity     = var.desired_capacity
+  max_size             = var.max_size
+  min_size             = var.min_size
   vpc_zone_identifier  = [aws_subnet.private_a.id,
   aws_subnet.private_b.id
   ]
@@ -180,13 +180,9 @@ resource "aws_autoscaling_group" "app_asg" {
 
   tag {
       key = "Name"
-      value = "spring-petclinic-${random_id.instance_name_suffix.hex}"
+      value = "spring-petclinic"
       propagate_at_launch = true
     }
   
-}
-
-resource "random_id" "instance_name_suffix" {
-  byte_length = 2
 }
 
