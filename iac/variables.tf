@@ -50,6 +50,18 @@ variable "private_subnet_b_cidr" {
   default     = "10.0.4.0/24"
 }
 
+variable "private_db_subnet_a_cidr" {
+  description = "The CIDR block for the private db subnet in Availability Zone 1"
+  type        = string
+  default     = "10.0.5.0/24"
+}
+
+variable "private_db_subnet_b_cidr" {
+  description = "The CIDR block for the private db subnet in Availability Zone 2"
+  type        = string
+  default     = "10.0.6.0/24"
+}
+
 variable "instance_inbound_port" {
   description = "The port of instance inbound connection"
   type = number
@@ -91,3 +103,53 @@ variable "max_size" {
   default     = 4
 }
 
+# Tags
+variable "tags" {
+  description = "A map of tags to add to all resources"
+  type        = map(string)
+  default = {
+    Project     = "springpetclinic"
+  }
+}
+
+variable "db_name" {
+  description = "Name of the database"
+  default     = "springpetclinicdb"
+}
+
+variable "db_instance_class" {
+  description = "RDS instance class"
+  default     = "db.t3.micro"
+}
+
+variable "db_engine" {
+  description = "Database engine"
+  default     = "mysql"
+}
+
+variable "db_engine_version" {
+  description = "Database engine version"
+  default     = "8.0.33"
+}
+
+variable "db_storage_type" {
+  description = "Database storage type"
+  default     = "gp2"
+}
+
+variable "db_storage" {
+  description = "Database storage"
+  default     = 10
+}
+
+variable "ingress_alb_port" {
+  description = "The port of ingress alb connection"
+  type = number
+  default = 80
+}
+
+variable "database_port" {
+  description = "The port of database connection"
+  type = number
+  default = 3306
+}
