@@ -1,0 +1,14 @@
+# /etc/systemd/system/spring-petclinic.service
+
+[Unit]
+Description=Spring Petclinic Application
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/spring-petclinic
+ExecStart=/usr/bin/java -jar /home/ubuntu/spring-petclinic/target/spring-petclinic-3.3.0-SNAPSHOT.jar --spring.profiles.active=mysql
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
