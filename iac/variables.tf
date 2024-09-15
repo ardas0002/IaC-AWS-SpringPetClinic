@@ -5,6 +5,11 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "account_id" {
+  description = "The AWS account ID"
+  type        = string
+}
+
 # VPC CIDR Block
 variable "vpc_cidr" {
   description = "The CIDR block for the VPC"
@@ -72,7 +77,7 @@ variable "instance_inbound_port" {
 variable "instance_ami" {
   description = "The Amazon Machine Image (AMI) ID for EC2 instances"
   type        = string
-  default     = "ami-03b1721d5d0ea0803" 
+  default     = "ami-075b9e93f4c287352" 
 }
 
 # Instance Type

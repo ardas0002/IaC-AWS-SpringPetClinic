@@ -9,6 +9,52 @@ resource "aws_lb" "app_lb" {
     aws_subnet.public_b.id]
 }
 
+# Define IAM role for EC2 instances
+resource "aws_iam_role" "ec2_role" {
+  name = "${var.tags.Project}-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "rds_access_policy" {
+  name = "${var.tags.Project}-rds-access-policy"
+  role = aws_iam_role.ec2_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "rds-db:connect",
+        ]
+        Resource = "arn:aws:rds:${var.aws_region}:${var.account_id}:db:${var.db_name}"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "secrets_manager_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+  role       = aws_iam_role.ec2_role.name
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "${var.tags.Project}-ec2-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 # Define Target Group for ALB
 resource "aws_lb_target_group" "app_tg" {
   name     = "${var.tags.Project}-tg"
@@ -34,10 +80,24 @@ resource "aws_launch_template" "app_lt" {
   image_id      = var.instance_ami # replace with an Ubuntu AMI ID
   instance_type = var.instance_type
 
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_profile.name
+  }
+
   network_interfaces {
     associate_public_ip_address = false
     security_groups             = [aws_security_group.instance_sg.id]
   }
+
+  user_data = base64encode(<<-EOF
+                DB_CREDS=$(aws secretsmanager get-secret-value --secret-id "${var.tags.Project}/db_credentials" --query SecretString --output text)
+                DB_USERNAME=$(echo $DB_CREDS | jq -r .username)
+                DB_PASSWORD=$(echo $DB_CREDS | jq -r .password)
+                DB_NAME=${var.db_name}
+                DB_ENDPOINT=${aws_db_instance.main.endpoint}
+                sudo systemctl restart spring-petclinic       
+                EOF
+    )
 }
 
 # Define Auto Scaling Group
@@ -61,6 +121,8 @@ resource "aws_autoscaling_group" "app_asg" {
       value = "${var.tags.Project}-asg"
       propagate_at_launch = true
     }
+  
+  depends_on = [null_resource.db_init]
 }
 
 resource "aws_autoscaling_policy" "scale_out_policy" {

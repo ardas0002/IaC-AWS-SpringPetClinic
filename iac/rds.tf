@@ -27,3 +27,32 @@ resource "aws_db_instance" "main" {
   tags                 = var.tags
 }
 
+resource "aws_ssm_parameter" "db_name" {
+  name  = "/${var.tags.Project}/db_name"
+  type  = "String"
+  value = aws_db_instance.main.db_name
+}
+
+resource "aws_ssm_parameter" "db_endpoint" {
+  name  = "/${var.tags.Project}/db_endpoint"
+  type  = "String"
+  value = aws_db_instance.main.endpoint
+}
+
+resource "null_resource" "db_init" {
+  depends_on = [aws_db_instance.main, aws_lambda_function.db_init]
+
+  provisioner "local-exec" {
+    command = <<EOF
+       aws lambda invoke --function-name ${aws_lambda_function.db_init.function_name} --region ${var.aws_region} response.json & type response.json
+    EOF
+  }
+}
+
+output "rds_endpoint" {
+  value = aws_db_instance.main.endpoint
+}
+
+output "db_name" {
+  value = aws_db_instance.main.db_name
+}

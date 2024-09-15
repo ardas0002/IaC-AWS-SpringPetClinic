@@ -26,3 +26,7 @@ iac/override.tf
 iac/override.tf.json
 iac/crash.log
 iac/*.tfvars
+iac/lambda/py*
+response.json
+iac/errored.tfstate
+iac/lambda_function.zip

@@ -1,6 +1,8 @@
 # Define VPC
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support = true
 }
 
 # Define Public Subnet in Availability Zone 1
@@ -75,4 +77,15 @@ resource "aws_route_table_association" "public_a" {
 resource "aws_route_table_association" "public_b" {
   subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.secretsmanager"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+  security_group_ids = [aws_security_group.secretsmanager_endpoint_sg.id]
+
+  private_dns_enabled = true
+
 }
